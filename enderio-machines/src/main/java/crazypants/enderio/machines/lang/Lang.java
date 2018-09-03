@@ -10,7 +10,7 @@ import crazypants.enderio.machines.EnderIOMachines;
 public enum Lang implements ILang {
 
   GUI_STIRGEN_OUTPUT(".gui.stirling_generator.output"),
-  GUI_STIRGEN_RATE(".gui.stirling_generator.burnRate"),
+  GUI_STIRGEN_EFFICIENCY(".gui.stirling_generator.efficiency"),
   GUI_STIRGEN_SLOT(".gui.stirling_generator.upgradeslot"),
   GUI_STIRGEN_UPGRADES(".gui.stirling_generator.upgrades"),
   GUI_STIRGEN_REMAINING(".gui.stirling_generator.remaining"),
@@ -123,6 +123,9 @@ public enum Lang implements ILang {
   GUI_VACUUM_XP_HEADER(".gui.vacuum.xp.header"),
   GUI_VACUUM_PRIME_TOOLTIP(".gui.vacuum.prime"),
   STATUS_SPAWNER_UNBOUND(".status.powered_spawner.unbound"),
+  GUI_CREATIVE_SPAWNER_SOUL(".block_creative_spawner.gui.vial"),
+  GUI_CREATIVE_SPAWNER_TEMPLATE(".block_creative_spawner.gui.template"),
+  GUI_CREATIVE_SPAWNER_OFFERING(".block_creative_spawner.gui.offering"),
 
   ;
 

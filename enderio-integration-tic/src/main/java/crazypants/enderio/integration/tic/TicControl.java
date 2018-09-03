@@ -7,6 +7,7 @@ import com.enderio.core.common.util.NNList.Callback;
 import com.enderio.core.common.util.NullHelper;
 
 import crazypants.enderio.base.EnderIO;
+import crazypants.enderio.base.farming.FarmersRegistry;
 import crazypants.enderio.base.integration.tic.TicProxy;
 import crazypants.enderio.base.material.alloy.Alloy;
 import crazypants.enderio.integration.tic.book.EioBook;
@@ -15,8 +16,9 @@ import crazypants.enderio.integration.tic.fluids.Ender;
 import crazypants.enderio.integration.tic.fluids.Glowstone;
 import crazypants.enderio.integration.tic.fluids.Metal;
 import crazypants.enderio.integration.tic.fluids.Redstone;
+import crazypants.enderio.integration.tic.modifiers.TicModifierHandler;
 import crazypants.enderio.integration.tic.modifiers.TicModifiers;
-import crazypants.enderio.integration.tic.queues.TicHandler;
+import crazypants.enderio.integration.tic.queues.TicRecipeHandler;
 import crazypants.enderio.integration.tic.recipes.TicRegistration;
 import net.minecraft.block.Block;
 import net.minecraftforge.client.event.ModelRegistryEvent;
@@ -45,7 +47,7 @@ public class TicControl {
   }
 
   public static void preInitBeforeTic(FMLPreInitializationEvent event) {
-    TicProxy.register(TicHandler.instance);
+    TicProxy.register(TicRecipeHandler.instance, TicModifierHandler.instance);
     if (doFluids()) {
       Glowstone.createFluid();
       Redstone.createFluid();
@@ -98,6 +100,8 @@ public class TicControl {
     if (!EnderIO.proxy.isDedicatedServer()) {
       EioBook.integrate();
     }
+
+    FarmersRegistry.registerHoes("tconstruct", "mattock");
   }
 
   public static void postInitBeforeTic(FMLPostInitializationEvent event) {

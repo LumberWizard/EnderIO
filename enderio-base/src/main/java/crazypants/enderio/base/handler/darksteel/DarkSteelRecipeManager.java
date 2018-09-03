@@ -10,6 +10,7 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 import com.enderio.core.api.client.gui.IAdvancedTooltipProvider;
+import com.enderio.core.client.handlers.SpecialTooltipHandler;
 import com.enderio.core.common.util.NNList;
 import com.enderio.core.common.util.NNList.NNIterator;
 import com.enderio.core.common.util.NullHelper;
@@ -20,7 +21,6 @@ import crazypants.enderio.api.upgrades.IDarkSteelUpgrade;
 import crazypants.enderio.base.EnderIO;
 import crazypants.enderio.base.item.darksteel.upgrade.elytra.ElytraUpgrade;
 import crazypants.enderio.base.item.darksteel.upgrade.energy.EnergyUpgrade;
-import crazypants.enderio.base.item.darksteel.upgrade.explosive.ExplosiveUpgrade;
 import crazypants.enderio.base.item.darksteel.upgrade.flippers.SwimUpgrade;
 import crazypants.enderio.base.item.darksteel.upgrade.glider.GliderUpgrade;
 import crazypants.enderio.base.item.darksteel.upgrade.hoe.HoeUpgrade;
@@ -50,10 +50,9 @@ public class DarkSteelRecipeManager {
   @SubscribeEvent(priority = EventPriority.HIGH)
   public static void registerDarkSteelUpgrades(@Nonnull RegistryEvent.Register<IDarkSteelUpgrade> event) {
     final IForgeRegistry<IDarkSteelUpgrade> registry = event.getRegistry();
-    registry.register(EnergyUpgrade.EMPOWERED);
-    registry.register(EnergyUpgrade.EMPOWERED_TWO);
-    registry.register(EnergyUpgrade.EMPOWERED_THREE);
-    registry.register(EnergyUpgrade.EMPOWERED_FOUR);
+    for (EnergyUpgrade energyUpgrade : EnergyUpgrade.UPGRADES) {
+      registry.register(energyUpgrade);
+    }
     registry.register(JumpUpgrade.JUMP_ONE);
     registry.register(JumpUpgrade.JUMP_TWO);
     registry.register(JumpUpgrade.JUMP_THREE);
@@ -67,7 +66,6 @@ public class DarkSteelRecipeManager {
     registry.register(NightVisionUpgrade.INSTANCE);
     registry.register(TravelUpgrade.INSTANCE);
     registry.register(SpoonUpgrade.INSTANCE);
-    registry.register(ExplosiveUpgrade.INSTANCE);
     registry.register(HoeUpgrade.INSTANCE);
   }
 
@@ -162,6 +160,7 @@ public class DarkSteelRecipeManager {
   }
 
   public static void addCommonTooltipEntries(@Nonnull ItemStack itemstack, EntityPlayer entityplayer, @Nonnull List<String> list, boolean flag) {
+    SpecialTooltipHandler.addCommonTooltipFromResources(list, itemstack.getUnlocalizedName());
     if (itemstack.getItem() instanceof IDarkSteelItem) {
       for (IDarkSteelUpgrade upgrade : UpgradeRegistry.getUpgrades()) {
         if (upgrade instanceof IAdvancedTooltipProvider && upgrade.hasUpgrade(itemstack, (IDarkSteelItem) itemstack.getItem())) {
@@ -172,6 +171,7 @@ public class DarkSteelRecipeManager {
   }
 
   public static void addBasicTooltipEntries(@Nonnull ItemStack itemstack, EntityPlayer entityplayer, @Nonnull List<String> list, boolean flag) {
+    SpecialTooltipHandler.addBasicTooltipFromResources(list, itemstack.getUnlocalizedName());
     if (itemstack.getItem() instanceof IDarkSteelItem) {
       for (IDarkSteelUpgrade upgrade : UpgradeRegistry.getUpgrades()) {
         if (upgrade instanceof IAdvancedTooltipProvider && upgrade.hasUpgrade(itemstack, (IDarkSteelItem) itemstack.getItem())) {
@@ -182,6 +182,7 @@ public class DarkSteelRecipeManager {
   }
 
   public static void addAdvancedTooltipEntries(@Nonnull ItemStack itemstack, EntityPlayer entityplayer, @Nonnull List<String> list, boolean flag) {
+    SpecialTooltipHandler.addDetailedTooltipFromResources(list, itemstack.getUnlocalizedName());
     if (itemstack.getItem() instanceof IDarkSteelItem) {
       List<IDarkSteelUpgrade> applyableUpgrades = new ArrayList<IDarkSteelUpgrade>();
       for (IDarkSteelUpgrade upgrade : UpgradeRegistry.getUpgrades()) {

@@ -8,7 +8,7 @@ public final class ConduitConfig {
   private static final int MAX = 2_000_000_000; // 0x77359400, keep some headroom to MAX_INT
   private static final int MAXIO = MAX / 2;
 
-  public static final IValueFactory F = Config.F.section("condit");
+  public static final IValueFactory F = Config.F.section("conduit");
   public static final IValueFactory FE = F.section(".energy");
   public static final IValueFactory FF = F.section(".fluid");
   public static final IValueFactory FI = F.section(".item");
@@ -57,5 +57,20 @@ public final class ConduitConfig {
 
   public static final IValue<Boolean> usePhyscialDistance = FI.make("usePhyscialDistance", false, //
       "If true, 'line of sight' distance rather than conduit path distance is used to calculate priorities.").sync();
+
+  public static final IValue<Integer> maxSlotCheckPerTick = FI.make("maxSlotCheckPerTick", 27, //
+      "When extracting from an inventory, how many items should be tried to insert somewhere? Lowering this can increase tps on bigger servers "
+          + "but will slow down extracting from big inventories. Default is one normal chest. Empty slots are not counted.")
+      .setRange(1, 512).sync();
+  public static final IValue<Integer> sleepBetweenFailedTries = FI.make("sleepBetweenFailedTries", 50, //
+      "When extracting from an inventory, how long should the connection wait until retrying if it couldn't transfer anything? Note that this "
+          + "is per input connection. Increasing this can increase tps on bigger servers but will create awkward pauses until conduits (re-)start "
+          + "transfering items.")
+      .setRange(10, 500).sync();
+  public static final IValue<Integer> sleepBetweenTries = FI.make("sleepBetweenTries", 20, //
+      "When extracting from an inventory, how often should the connection check if it is in extract mode and its redstone mode allows extracting? "
+          + "Note that this is per input connection. Increasing this can increase tps on bigger servers but will create awkward pauses until conduits "
+          + "(re-)start transfering items.")
+      .setRange(10, 500).sync();
 
 }

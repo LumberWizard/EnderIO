@@ -3,7 +3,10 @@ package crazypants.enderio.zoo.entity;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import crazypants.enderio.base.config.Config;
 import crazypants.enderio.base.events.EnderIOLifecycleEvent;
+import crazypants.enderio.base.handler.darksteel.SwordHandler;
+import crazypants.enderio.base.init.ModObject;
 import crazypants.enderio.base.teleport.RandomTeleportUtil;
 import crazypants.enderio.zoo.EnderIOZoo;
 import crazypants.enderio.zoo.config.ZooConfig;
@@ -12,15 +15,18 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.monster.EntityZombie;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityDamageSource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.storage.loot.LootTableList;
 import net.minecraftforge.event.RegistryEvent.Register;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -34,6 +40,7 @@ public class EntityLoveChild extends EntityZombie implements IEnderZooMob {
 
   @SubscribeEvent
   public static void onEntityRegister(@Nonnull Register<EntityEntry> event) {
+    LootTableList.register(new ResourceLocation(EnderIOZoo.DOMAIN, NAME));
     IEnderZooMob.register(event, NAME, EntityLoveChild.class, EGG_BG_COL, EGG_FG_COL, MobID.LCHILD);
   }
 
@@ -96,7 +103,7 @@ public class EntityLoveChild extends EntityZombie implements IEnderZooMob {
   @Override
   @Nullable
   protected ResourceLocation getLootTable() {
-    return null;
+    return new ResourceLocation(EnderIOZoo.DOMAIN, NAME);
   }
 
   @Override
@@ -113,6 +120,10 @@ public class EntityLoveChild extends EntityZombie implements IEnderZooMob {
   @Override
   public boolean attackEntityFrom(@Nonnull DamageSource source, float amount) {
     if (!isEntityInvulnerable(source) && super.attackEntityFrom(source, amount)) {
+      if (source instanceof EntityDamageSource && source.getTrueSource() instanceof EntityPlayer
+          && SwordHandler.isEquippedAndPowered((EntityPlayer) source.getTrueSource(), Config.darkSteelSwordPowerUsePerHit)) {
+        return true;
+      }
       if (rand.nextFloat() < ZooConfig.defendTeleportChance.get()) {
         RandomTeleportUtil.teleportEntity(world, this, false, true, ZooConfig.defendTeleportDistance.get());
         getNavigator().clearPath();
@@ -125,12 +136,21 @@ public class EntityLoveChild extends EntityZombie implements IEnderZooMob {
 
   @Override
   protected @Nonnull Item getDropItem() {
+    // unused, see loot table
     return Items.ENDER_PEARL;
   }
 
   @Override
   protected @Nonnull ItemStack getSkullDrop() {
-    return ItemStack.EMPTY;
+    switch (ZooConfig.loveSkullDrop.get()) {
+    case ENDERMAN:
+      return new ItemStack(ModObject.blockEndermanSkull.getBlockNN());
+    case ZOMBIE:
+      return super.getSkullDrop();
+    case NONE:
+    default:
+      return ItemStack.EMPTY;
+    }
   }
 
   @Override

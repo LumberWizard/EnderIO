@@ -2,6 +2,11 @@ package crazypants.enderio.api.upgrades;
 
 import javax.annotation.Nonnull;
 
+import com.google.common.collect.Multimap;
+
+import crazypants.enderio.api.capacitor.ICapacitorKey;
+import crazypants.enderio.base.handler.darksteel.UpgradeRegistry;
+import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -76,6 +81,58 @@ public interface IDarkSteelItem {
    */
   default boolean hasUpgradeCallbacks(@Nonnull IDarkSteelUpgrade upgrade) {
     return false;
+  }
+
+  /**
+   * Returns an {@link IEquipmentData} that describes the item.
+   * <p>
+   * Used by upgrades to determine if they can be applied to an item
+   */
+  @Nonnull
+  IEquipmentData getEquipmentData();
+
+  @Nonnull
+  ICapacitorKey getEnergyStorageKey(@Nonnull ItemStack stack);
+
+  @Nonnull
+  ICapacitorKey getEnergyInputKey(@Nonnull ItemStack stack);
+
+  // This is used when extracting energy, limiting the amount that can be extracted at once
+  @Nonnull
+  ICapacitorKey getEnergyUseKey(@Nonnull ItemStack stack);
+
+  default boolean allowExtractEnergy() {
+    return false;
+  }
+
+  @Nonnull
+  ICapacitorKey getAbsorptionRatioKey(@Nonnull ItemStack stack);
+
+  default int getMaxEmpoweredLevel(@Nonnull ItemStack stack) {
+    return getEquipmentData().getTier() >= 2 ? 4 : 3;
+    // 3: "Empowered IV", max for Dark Steel
+    // 4: "Empowered V", max for End Steel
+  }
+
+  /**
+   * Call this from {@link Item#getAttributeModifiers(EntityEquipmentSlot, ItemStack)} like this:
+   * <p>
+   * 
+   * <pre>
+   * &#64;Override
+   * public @Nonnull Multimap<String, AttributeModifier> getAttributeModifiers(@Nonnull EntityEquipmentSlot slot, @Nonnull ItemStack stack) {
+   *   return addAttributeModifiers(slot, stack, super.getAttributeModifiers(slot, stack));
+   * }
+   * </pre>
+   */
+  default @Nonnull Multimap<String, AttributeModifier> addAttributeModifiers(@Nonnull EntityEquipmentSlot slot, @Nonnull ItemStack stack,
+      @Nonnull Multimap<String, AttributeModifier> map) {
+    for (IDarkSteelUpgrade upgrade : UpgradeRegistry.getUpgrades()) {
+      if (upgrade.hasUpgrade(stack)) {
+        upgrade.addAttributeModifiers(slot, stack, map);
+      }
+    }
+    return map;
   }
 
 }

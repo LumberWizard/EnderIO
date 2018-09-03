@@ -5,9 +5,9 @@ import javax.annotation.Nullable;
 
 import com.enderio.core.api.client.gui.IResourceTooltipProvider;
 
+import crazypants.enderio.api.IModObject;
 import crazypants.enderio.base.BlockEio;
 import crazypants.enderio.base.gui.handler.IEioGuiHandler;
-import crazypants.enderio.base.init.IModObject;
 import crazypants.enderio.base.paint.IPaintable;
 import crazypants.enderio.base.paint.render.PaintHelper;
 import crazypants.enderio.base.render.IBlockStateWrapper;
@@ -160,7 +160,7 @@ public class BlockXPVacuum extends BlockEio<TileXPVacuum>
   @Override
   @Nullable
   public Container getServerGuiElement(@Nonnull EntityPlayer player, @Nonnull World world, @Nonnull BlockPos pos, @Nullable EnumFacing facing, int param1) {
-    TileXPVacuum te = (TileXPVacuum) world.getTileEntity(pos);
+    TileXPVacuum te = getTileEntity(world, pos);
     if (te != null) {
       return new ContainerXPVacuum(player.inventory, te);
     }
@@ -171,7 +171,7 @@ public class BlockXPVacuum extends BlockEio<TileXPVacuum>
   @Override
   @Nullable
   public GuiScreen getClientGuiElement(@Nonnull EntityPlayer player, @Nonnull World world, @Nonnull BlockPos pos, @Nullable EnumFacing facing, int param1) {
-    TileXPVacuum te = (TileXPVacuum) world.getTileEntity(pos);
+    TileXPVacuum te = getTileEntity(world, pos);
     if (te != null) {
       return new GuiXPVacuum(new ContainerXPVacuum(player.inventory, te), te);
     }

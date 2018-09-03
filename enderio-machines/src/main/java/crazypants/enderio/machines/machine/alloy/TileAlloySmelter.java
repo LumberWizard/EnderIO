@@ -6,8 +6,10 @@ import javax.annotation.Nullable;
 import com.enderio.core.common.util.NNList;
 import com.enderio.core.common.util.NullHelper;
 
+import crazypants.enderio.api.capacitor.ICapacitorData;
+import crazypants.enderio.api.capacitor.ICapacitorKey;
 import crazypants.enderio.base.Log;
-import crazypants.enderio.base.capacitor.ICapacitorKey;
+import crazypants.enderio.base.capacitor.CapacitorHelper;
 import crazypants.enderio.base.machine.baselegacy.AbstractPoweredTaskEntity;
 import crazypants.enderio.base.machine.baselegacy.SlotDefinition;
 import crazypants.enderio.base.machine.interfaces.IPoweredTask;
@@ -28,13 +30,16 @@ import net.minecraft.util.EnumFacing;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.ALLOY_SMELTER_POWER_BUFFER;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.ALLOY_SMELTER_POWER_INTAKE;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.ALLOY_SMELTER_POWER_USE;
+import static crazypants.enderio.machines.capacitor.CapacitorKey.ENHANCED_ALLOY_SMELTER_DOUBLE_OP_CHANCE;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.ENHANCED_ALLOY_SMELTER_POWER_BUFFER;
+import static crazypants.enderio.machines.capacitor.CapacitorKey.ENHANCED_ALLOY_SMELTER_POWER_EFFICIENCY;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.ENHANCED_ALLOY_SMELTER_POWER_INTAKE;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.ENHANCED_ALLOY_SMELTER_POWER_USE;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.SIMPLE_ALLOY_SMELTER_POWER_BUFFER;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.SIMPLE_ALLOY_SMELTER_POWER_INTAKE;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.SIMPLE_ALLOY_SMELTER_POWER_LOSS;
 import static crazypants.enderio.machines.capacitor.CapacitorKey.SIMPLE_ALLOY_SMELTER_POWER_USE;
+import static crazypants.enderio.machines.capacitor.CapacitorKey.SIMPLE_STIRLING_POWER_LOSS;
 
 @Storable
 public class TileAlloySmelter extends AbstractPoweredTaskEntity implements IPaintable.IPaintableTileEntity {
@@ -54,14 +59,36 @@ public class TileAlloySmelter extends AbstractPoweredTaskEntity implements IPain
 
   }
 
+  public static class Furnace extends TileAlloySmelter {
+
+    public Furnace() {
+      super(new SlotDefinition(3, 1, 0), SIMPLE_ALLOY_SMELTER_POWER_INTAKE, SIMPLE_ALLOY_SMELTER_POWER_BUFFER, SIMPLE_ALLOY_SMELTER_POWER_USE);
+      setEnergyLoss(SIMPLE_STIRLING_POWER_LOSS);
+      mode = Mode.FURNACE;
+    }
+
+    @Nonnull
+    @Override
+    public Mode getMode() {
+      return Mode.FURNACE;
+    }
+  }
+
   public static class Enhanced extends TileAlloySmelter {
     public Enhanced() {
       super(new SlotDefinition(3, 1, 1), ENHANCED_ALLOY_SMELTER_POWER_INTAKE, ENHANCED_ALLOY_SMELTER_POWER_BUFFER, ENHANCED_ALLOY_SMELTER_POWER_USE);
+      setEfficiencyMultiplier(ENHANCED_ALLOY_SMELTER_POWER_EFFICIENCY);
+    }
+
+    @Nonnull
+    @Override
+    public ICapacitorData getCapacitorData() {
+      return CapacitorHelper.increaseCapacitorLevel(super.getCapacitorData(), 1f);
     }
 
     @Override
     protected boolean shouldDoubleTick(@Nonnull IPoweredTask task, int usedEnergy) {
-      double chance = 3 * (usedEnergy / task.getRequiredEnergy());
+      double chance = getCapacitorData().getUnscaledValue(ENHANCED_ALLOY_SMELTER_DOUBLE_OP_CHANCE) * (usedEnergy / task.getRequiredEnergy());
       if (random.nextDouble() < chance) {
         return true;
       }
@@ -80,20 +107,22 @@ public class TileAlloySmelter extends AbstractPoweredTaskEntity implements IPain
     ALLOY,
     FURNACE;
 
+    @Nonnull
     Mode next() {
       int nextOrd = ordinal() + 1;
       if (nextOrd >= values().length) {
         nextOrd = 0;
       }
-      return values()[nextOrd];
+      return NullHelper.first(values()[nextOrd], ALL);
     }
 
+    @Nonnull
     Mode prev() {
       int nextOrd = ordinal() - 1;
       if (nextOrd < 0) {
         nextOrd = values().length - 1;
       }
-      return values()[nextOrd];
+      return NullHelper.first(values()[nextOrd], ALL);
     }
   }
 
@@ -223,9 +252,9 @@ public class TileAlloySmelter extends AbstractPoweredTaskEntity implements IPain
   private boolean isItemAlreadyInASlot(@Nonnull ItemStack itemstack) {
     ItemStack currentStackType = null;
     for (int i = slotDefinition.getMinInputSlot(); i <= slotDefinition.getMaxInputSlot() && currentStackType == null; i++) {
-      currentStackType = inventory[i];
-      if (currentStackType != null && currentStackType.isItemEqual(itemstack)) {
-        return true;
+      currentStackType = getStackInSlot(i);
+      if (Prep.isValid(currentStackType)) {
+        return currentStackType.isItemEqual(itemstack);
       }
     }
     return false;

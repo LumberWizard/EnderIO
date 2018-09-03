@@ -13,7 +13,6 @@ import javax.annotation.Nullable;
 
 import com.enderio.core.api.client.gui.ITabPanel;
 import com.enderio.core.client.render.BoundingBox;
-import com.enderio.core.client.render.IconUtil;
 import com.enderio.core.common.util.DyeColor;
 import com.enderio.core.common.vecmath.Vector3d;
 import com.enderio.core.common.vecmath.Vector4f;
@@ -61,7 +60,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static crazypants.enderio.base.conduit.ConnectionMode.INPUT;
 import static crazypants.enderio.base.conduit.ConnectionMode.OUTPUT;
-import static crazypants.enderio.conduits.init.ConduitObject.item_power_conduit;
 
 public class PowerConduit extends AbstractConduit implements IPowerConduit, IConduitComponent {
 
@@ -72,32 +70,26 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   static {
     for (String pf : POSTFIX) {
       ICONS.put(ICON_KEY + pf, TextureRegistry.registerTexture(ICON_KEY + pf));
-      ICONS.put(ICON_KEY_INPUT + pf, TextureRegistry.registerTexture(ICON_KEY_INPUT + pf));
-      ICONS.put(ICON_KEY_OUTPUT + pf, TextureRegistry.registerTexture(ICON_KEY_OUTPUT + pf));
       ICONS.put(ICON_CORE_KEY + pf, TextureRegistry.registerTexture(ICON_CORE_KEY + pf));
     }
+    ICONS.put(ICON_KEY_INPUT, TextureRegistry.registerTexture(ICON_KEY_INPUT));
+    ICONS.put(ICON_KEY_OUTPUT, TextureRegistry.registerTexture(ICON_KEY_OUTPUT));
     ICONS.put(ICON_TRANSMISSION_KEY, TextureRegistry.registerTexture(ICON_TRANSMISSION_KEY));
-  }
-
-  @Nonnull
-  static ItemStack createItemStackForSubtype(int subtype) {
-    ItemStack result = new ItemStack(item_power_conduit.getItemNN(), 1, subtype);
-    return result;
   }
 
   public static final float WIDTH = 0.075f;
   public static final float HEIGHT = 0.075f;
 
-  public static final Vector3d MIN = new Vector3d(0.5f - WIDTH, 0.5 - HEIGHT, 0.5 - WIDTH);
-  public static final Vector3d MAX = new Vector3d(MIN.x + WIDTH, MIN.y + HEIGHT, MIN.z + WIDTH);
+  public static final @Nonnull Vector3d MIN = new Vector3d(0.5f - WIDTH, 0.5 - HEIGHT, 0.5 - WIDTH);
+  public static final @Nonnull Vector3d MAX = new Vector3d(MIN.x + WIDTH, MIN.y + HEIGHT, MIN.z + WIDTH);
 
-  public static final BoundingBox BOUNDS = new BoundingBox(MIN, MAX);
+  public static final @Nonnull BoundingBox BOUNDS = new BoundingBox(MIN, MAX);
 
   protected PowerConduitNetwork network;
 
   private int energyStoredRF;
 
-  private int subtype;
+  private @Nonnull IPowerConduitData subtype = IPowerConduitData.Registry.fromID(0);
 
   protected final EnumMap<EnumFacing, RedstoneControlMode> rsModes = new EnumMap<EnumFacing, RedstoneControlMode>(EnumFacing.class);
   protected final EnumMap<EnumFacing, DyeColor> rsColors = new EnumMap<EnumFacing, DyeColor>(EnumFacing.class);
@@ -107,9 +99,8 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   public PowerConduit() {
   }
 
-  public PowerConduit(int meta) {
-    this.subtype = meta;
-    ;
+  public PowerConduit(@Nonnull IPowerConduitData subtype) {
+    this.subtype = subtype;
   }
 
   @Override
@@ -268,7 +259,7 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   protected void readTypeSettings(@Nonnull EnumFacing dir, @Nonnull NBTTagCompound dataRoot) {
     setConnectionMode(dir, ConnectionMode.values()[dataRoot.getShort("connectionMode")]);
     setExtractionSignalColor(dir, DyeColor.values()[dataRoot.getShort("extractionSignalColor")]);
-    setExtractionRedstoneMode(RedstoneControlMode.values()[dataRoot.getShort("extractionRedstoneMode")], dir);
+    setExtractionRedstoneMode(RedstoneControlMode.fromOrdinal(dataRoot.getShort("extractionRedstoneMode")), dir);
   }
 
   @Override
@@ -281,7 +272,7 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   @Override
   public void writeToNBT(@Nonnull NBTTagCompound nbtRoot) {
     super.writeToNBT(nbtRoot);
-    nbtRoot.setShort("subtype", (short) subtype);
+    nbtRoot.setShort("subtype", (short) subtype.getID());
     nbtRoot.setInteger("energyStoredRF", energyStoredRF);
 
     for (Entry<EnumFacing, RedstoneControlMode> entry : rsModes.entrySet()) {
@@ -302,7 +293,7 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   @Override
   public void readFromNBT(@Nonnull NBTTagCompound nbtRoot) {
     super.readFromNBT(nbtRoot);
-    subtype = nbtRoot.getShort("subtype");
+    subtype = IPowerConduitData.Registry.fromID(nbtRoot.getShort("subtype"));
 
     if (nbtRoot.hasKey("energyStored")) {
       nbtRoot.setInteger("energyStoredRF", (int) (nbtRoot.getFloat("energyStored") * 10));
@@ -332,15 +323,8 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   public void onTick() {
   }
 
-  static int getMaxEnergyIO(int subtype) {
-    switch (subtype) {
-    case 1:
-      return ConduitConfig.tier2_maxIO.get();
-    case 2:
-      return ConduitConfig.tier3_maxIO.get();
-    default:
-      return ConduitConfig.tier1_maxIO.get();
-    }
+  public static int getMaxEnergyIO(IPowerConduitData subtype) {
+    return subtype.getMaxEnergyIO();
   }
 
   // ----------- IEnergyStorage ---------------
@@ -398,10 +382,11 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
    *          side for the capability
    * @return returns the connection with reference to the relevant side
    */
+  @Nullable
   private IEnergyStorage getEnergyDir(EnumFacing dir) {
     if (dir != null)
       return new ConnectionSide(dir);
-    return this;
+    return null;
   }
 
   private boolean isRedstoneEnabled(@Nonnull EnumFacing dir) {
@@ -483,7 +468,7 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   public void externalConnectionAdded(@Nonnull EnumFacing direction) {
     super.externalConnectionAdded(direction);
     if (network != null) {
-      TileEntity te = bundle.getEntity();
+      TileEntity te = getBundle().getEntity();
       BlockPos p = te.getPos().offset(direction);
       network.powerReceptorAdded(this, direction, p.getX(), p.getY(), p.getZ(), getExternalPowerReceptor(direction));
     }
@@ -493,7 +478,7 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   public void externalConnectionRemoved(@Nonnull EnumFacing direction) {
     super.externalConnectionRemoved(direction);
     if (network != null) {
-      TileEntity te = bundle.getEntity();
+      TileEntity te = getBundle().getEntity();
       BlockPos p = te.getPos().offset(direction);
       network.powerReceptorRemoved(p.getX(), p.getY(), p.getZ());
     }
@@ -501,7 +486,7 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
 
   @Override
   public IPowerInterface getExternalPowerReceptor(@Nonnull EnumFacing direction) {
-    TileEntity te = bundle.getEntity();
+    TileEntity te = getBundle().getEntity();
     World world = te.getWorld();
     TileEntity test = world.getTileEntity(te.getPos().offset(direction));
     if (test == null) {
@@ -516,7 +501,7 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   @Override
   @Nonnull
   public ItemStack createItem() {
-    return createItemStackForSubtype(subtype);
+    return subtype.createItemStackForSubtype();
   }
 
   @Override
@@ -529,33 +514,27 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   @Override
   @Nonnull
   public TextureAtlasSprite getTextureForState(@Nonnull CollidableComponent component) {
-    if (component.dir == null) {
-      return ICONS.get(ICON_CORE_KEY + POSTFIX[subtype]).get(TextureAtlasSprite.class);
-    }
-    if (COLOR_CONTROLLER_ID.equals(component.data)) {
-      return IconUtil.instance.whiteTexture;
-    }
-    return ICONS.get(ICON_KEY + POSTFIX[subtype]).get(TextureAtlasSprite.class);
+    return subtype.getTextureForState(component);
   }
 
   @Override
   public TextureAtlasSprite getTextureForInputMode() {
-    return ICONS.get(ICON_KEY_INPUT + POSTFIX[subtype]).get(TextureAtlasSprite.class);
+    return ICONS.get(PowerConduit.ICON_KEY_INPUT).get(TextureAtlasSprite.class);
   }
 
   @Override
   public TextureAtlasSprite getTextureForOutputMode() {
-    return ICONS.get(ICON_KEY_OUTPUT + POSTFIX[subtype]).get(TextureAtlasSprite.class);
+    return ICONS.get(PowerConduit.ICON_KEY_OUTPUT).get(TextureAtlasSprite.class);
   }
 
   @Override
-  public TextureAtlasSprite getTransmitionTextureForState(@Nonnull CollidableComponent component) {
+  public @Nonnull TextureAtlasSprite getTransmitionTextureForState(@Nonnull CollidableComponent component) {
     return null;
   }
 
   @Override
   @SideOnly(Side.CLIENT)
-  public Vector4f getTransmitionTextureColorForState(@Nonnull CollidableComponent component) {
+  public @Nonnull Vector4f getTransmitionTextureColorForState(@Nonnull CollidableComponent component) {
     return null;
   }
 
@@ -581,15 +560,15 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   @Override
   public void hashCodeForModelCaching(BlockStateWrapperConduitBundle.ConduitCacheKey hashCodes) {
     super.hashCodeForModelCaching(hashCodes);
-    if (subtype != 1) {
-      hashCodes.add(subtype);
+    if (subtype.getID() != 1) {
+      hashCodes.add(subtype.getID());
     }
     hashCodes.addEnum(rsModes);
     hashCodes.addEnum(rsColors);
   }
 
   @Override
-  public PowerConduitNetwork createNetworkForType() {
+  public @Nonnull PowerConduitNetwork createNetworkForType() {
     return new PowerConduitNetwork();
   }
 
@@ -624,7 +603,7 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
   @Override
   public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
     if (capability == CapabilityEnergy.ENERGY)
-      return facing == null || getExternalConnections().contains(facing);
+      return getExternalConnections().contains(facing);
     return false;
   }
 
@@ -642,14 +621,14 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
    */
   public class ConnectionSide implements IEnergyStorage {
 
-    private EnumFacing side;
+    private final @Nonnull EnumFacing side;
 
-    public ConnectionSide(EnumFacing side) {
+    public ConnectionSide(@Nonnull EnumFacing side) {
       this.side = side;
     }
 
     private boolean recievedRfThisTick() {
-      if (recievedTicks == null || side == null || recievedTicks.get(side) == null || getBundle() == null || getBundle().getBundleworld() == null) {
+      if (recievedTicks == null || recievedTicks.get(side) == null || bundle == null) {
         return false;
       }
 
@@ -691,13 +670,11 @@ public class PowerConduit extends AbstractConduit implements IPowerConduit, ICon
     public int receiveEnergy(int maxReceive, boolean simulate) {
       if (isReceive()) {
         int energyFinal = PowerConduit.this.receiveEnergy(maxReceive, simulate);
-        if (getBundle() != null) {
+        if (bundle != null) {
           if (recievedTicks == null) {
             recievedTicks = new EnumMap<EnumFacing, Long>(EnumFacing.class);
           }
-          if (side != null) {
-            recievedTicks.put(side, getBundle().getBundleworld().getTotalWorldTime());
-          }
+          recievedTicks.put(side, getBundle().getBundleworld().getTotalWorldTime());
         }
         return energyFinal;
       }

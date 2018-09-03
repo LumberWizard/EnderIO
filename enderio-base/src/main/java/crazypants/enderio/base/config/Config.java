@@ -1,7 +1,6 @@
 package crazypants.enderio.base.config;
 
 import java.io.File;
-import java.util.Map.Entry;
 
 import javax.annotation.Nonnull;
 
@@ -21,9 +20,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
-import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -44,21 +41,16 @@ public final class Config {
   public static Configuration config;
 
   public static final @Nonnull Section sectionPower = new Section("Power Settings", "power");
-  public static final @Nonnull Section sectionRecipe = new Section("Recipe Settings", "recipe");
   public static final @Nonnull Section sectionItems = new Section("Item Enabling", "item");
-  public static final @Nonnull Section sectionEfficiency = new Section("Efficiency Settings", "efficiency");
   public static final @Nonnull Section sectionAnchor = new Section("Anchor Settings", "anchor");
   public static final @Nonnull Section sectionStaff = new Section("Staff Settings", "staff");
   public static final @Nonnull Section sectionRod = new Section("Rod of Return Settings", "rod");
   public static final @Nonnull Section sectionDarkSteel = new Section("Dark Steel", "darksteel");
   public static final @Nonnull Section sectionAdvanced = new Section("Advanced Settings", "advanced");
-  public static final @Nonnull Section sectionMagnet = new Section("Magnet Settings", "magnet");
   public static final @Nonnull Section sectionFluid = new Section("Fluid Settings", "fluid");
   public static final @Nonnull Section sectionSoulBinder = new Section("Soul Binder Settings", "soulBinder");
   public static final @Nonnull Section sectionSoulVial = new Section("", "soulvial");
-  public static final @Nonnull Section sectionEnchantments = new Section("Enchantments", "enchantments");
   public static final @Nonnull Section sectionMisc = new Section("Misc", "misc");
-  public static final @Nonnull Section sectionCapacitor = new Section("Capacitor Values", "capacitor");
   public static final @Nonnull Section sectionHoes = new Section("Farm Settings.Hoes", "hoes");
 
   public static final int DEFAULT_CONDUIT_PIXELS = 3;
@@ -95,12 +87,6 @@ public final class Config {
 
   public static float travelAnchorZoomScale = 0.2f;
 
-  public static double[] darkSteelPowerDamgeAbsorptionRatios = { 0.5, 0.6, 0.7, 0.85 };
-  public static int darkSteelPowerStorageBase = 100000;
-  public static int darkSteelPowerStorageLevelOne = 150000;
-  public static int darkSteelPowerStorageLevelTwo = 250000;
-  public static int darkSteelPowerStorageLevelThree = 1000000;
-
   public static int darkSteelSpeedOneCost = 4;
   public static int darkSteelSpeedTwoCost = 6;
   public static int darkSteelSpeedThreeCost = 8;
@@ -112,8 +98,6 @@ public final class Config {
 
   public static boolean slotZeroPlacesEight = true;
 
-  public static int darkSteelWalkPowerCost = darkSteelPowerStorageLevelTwo / 3000;
-  public static int darkSteelSprintPowerCost = darkSteelWalkPowerCost * 4;
   public static boolean darkSteelDrainPowerFromInventory = false;
   public static int darkSteelBootsJumpPowerCost = 150;
   public static int darkSteelFallDistanceCost = 75;
@@ -124,26 +108,12 @@ public final class Config {
   public static float darkSteelSwordSkullLootingModifier = 0.075f;
   public static float vanillaSwordSkullLootingModifier = 0.05f;
   public static float vanillaSwordSkullChance = 0.05f;
-  public static float ticCleaverSkullDropChance = 0.1f;
   public static float ticBeheadingSkullModifier = 0.075f;
   public static float fakePlayerSkullChance = 0.5f;
 
   public static int darkSteelSwordPowerUsePerHit = 750;
   public static double darkSteelSwordEnderPearlDropChance = 1.05;
   public static double darkSteelSwordEnderPearlDropChancePerLooting = 0.5;
-
-  public static float darkSteelBowDamageBonus = 0f;
-  public static double[] darkSteelBowForceMultipliers = { 1.1f, 1.2f, 1.3f, 1.4f, 1.5f };
-  public static int[] darkSteelBowDrawSpeeds = { 30, 20, 18, 16, 14 };
-  public static double[] darkSteelBowFovMultipliers = { 0.25, 0.3, 0.35, 0.4, 0.45 };
-  public static int darkSteelBowPowerUsePerDamagePoint = 1000;
-  public static int darkSteelBowPowerUsePerDraw = 750;
-  public static int darkSteelBowPowerUsePerTickDrawn = 5;
-
-  public static float endSteelBowDamageBonus = 0f;
-  public static double[] endSteelBowForceMultipliers = { 1.25f, 1.35f, 1.45f, 1.55f, 1.65f };
-  public static int[] endSteelBowDrawSpeeds = { 20, 15, 12, 11, 10 };
-  public static double[] endSteelBowFovMultipliers = { 0.25, 0.275, 0.3, 0.35, 0.4 };
 
   public static int darkSteelPickEffeciencyObsidian = 50;
   public static int darkSteelPickPowerUseObsidian = 10000;
@@ -163,11 +133,6 @@ public final class Config {
   public static float darkSteelShearsEffeciencyBoostWhenPowered = 2.0f;
   public static int darkSteelShearsBlockAreaBoostWhenPowered = 4;
   public static float darkSteelShearsEntityAreaBoostWhenPowered = 5.0f;
-
-  public static int darkSteelUpgradeVibrantCost = 4;
-  public static int darkSteelUpgradePowerOneCost = 6;
-  public static int darkSteelUpgradePowerTwoCost = 8;
-  public static int darkSteelUpgradePowerThreeCost = 12;
 
   public static int darkSteelGliderCost = 4;
   public static double darkSteelGliderHorizontalSpeed = 0.03;
@@ -206,33 +171,10 @@ public final class Config {
   public static int fireWaterPowerTotalBurnTime = 15000;
 
   /**
-   * Note: If someone asks you to include a hoe in this list, the correct answer is "No. Get the other mod author to oredict their hoe(s) as 'toolHoe'"
+   * Note: If someone asks you to include a hoe in this (no longer existing) list, the correct answer is:
+   * 
+   * "No. Get the other mod author to oredict their hoe(s) as 'toolHoe'"
    */
-  public static String[] hoeStrings = new String[] { "tconstruct:mattock", "thermalfoundation:tool.hoe_invar", "thermalfoundation:tool.hoe_copper",
-      "thermalfoundation:tool.hoe_bronze", "thermalfoundation:tool.hoe_silver", "thermalfoundation:tool.hoe_electrum", "thermalfoundation:tool.hoe_tin",
-      "thermalfoundation:tool.hoe_lead", "thermalfoundation:tool.hoe_nickel", "thermalfoundation:tool.hoe_platinum", "thermalfoundation:tool.hoe_aluminum",
-      "thermalfoundation:tool.hoe_steel", "thermalfoundation:tool.hoe_constantan", "basemetals:adamantine_hoe", "basemetals:aquarium_hoe",
-      "basemetals:brass_hoe", "basemetals:bronze_hoe", "basemetals:coldiron_hoe", "basemetals:copper_hoe", "basemetals:cupronickel_hoe",
-      "basemetals:electrum_hoe", "basemetals:invar_hoe", "basemetals:lead_hoe", "basemetals:mithril_hoe", "basemetals:nickel_hoe", "basemetals:platinum_hoe",
-      "basemetals:silver_hoe", "basemetals:starsteel_hoe", "basemetals:steel_hoe", "basemetals:tin_hoe", "actuallyadditions:item_hoe_quartz",
-      "actuallyadditions:item_hoe_emerald", "actuallyadditions:item_hoe_obsidian", "actuallyadditions:item_hoe_crystal_red",
-      "actuallyadditions:item_hoe_crystal_blue", "actuallyadditions:item_hoe_crystal_light_blue", "actuallyadditions:item_hoe_crystal_black",
-      "actuallyadditions:item_hoe_crystal_green", "actuallyadditions:item_hoe_crystal_white", "ic2:bronze_hoe" /* IC2exp 1.10 */,
-      "appliedenergistics2:nether_quartz_hoe", "appliedenergistics2:certus_quartz_hoe" /* AE2 1.10 */, "railcraft:tool_hoe_steel" /* Railcraft 1.10 */,
-      "mysticalagriculture:inferium_hoe", "mysticalagriculture:prudentium_hoe", "mysticalagriculture:intermedium_hoe", "mysticalagriculture:superium_hoe",
-      "mysticalagriculture:supremium_hoe" };
-  public static @Nonnull Things farmHoes = new Things();
-
-  public static int magnetPowerUsePerSecondRF = 1;
-  public static int magnetPowerCapacityRF = 100000;
-  public static int magnetRange = 5;
-  public static String[] magnetBlacklist = new String[] { "appliedenergistics2:crystal_seed", "botania:livingrock", "botania:manatablet" };
-  public static int magnetMaxItems = 20;
-
-  public static boolean magnetAllowInMainInventory = false;
-  public static boolean magnetAllowInBaublesSlot = true;
-  public static boolean magnetAllowDeactivatedInBaublesSlot = false;
-  public static String magnetBaublesType = "AMULET";
 
   public static long nutrientFoodBoostDelay = 400;
   public static boolean rocketFuelIsExplosive = true;
@@ -255,6 +197,8 @@ public final class Config {
   public static int soulBinderAttractorCystalLevels = 4;
   public static int soulBinderTunedPressurePlateLevels = 2;
   public static int soulBinderTunedPressurePlateRF = 250000;
+  public static int soulBinderVibrantCystalRF = 200000;
+  public static int soulBinderVibrantCystalLevels = 8;
 
   public static float slicenspliceToolDamageChance = 0.01f;
 
@@ -283,8 +227,6 @@ public final class Config {
   public static boolean enableBaublesIntegration = true;
 
   public static int maxMobsAttracted = 20;
-
-  public static double teleportEffectProbability = 0.03f;
 
   public static void init(FMLPreInitializationEvent event) {
     MinecraftForge.EVENT_BUS.register(new Config());
@@ -432,32 +374,6 @@ public final class Config {
         .getInt(rodOfReturnFluidUsePerTeleport);
     rodOfReturnFluidType = config.getString("rodOfReturnFluidType", sectionRod.name, rodOfReturnFluidType, "The type of fluid used by the rod.");
 
-    darkSteelPowerDamgeAbsorptionRatios = config.get(sectionDarkSteel.name, "darkSteelPowerDamgeAbsorptionRatios", darkSteelPowerDamgeAbsorptionRatios,
-        "A list of the amount of durability damage absorbed when items are powered. In order of upgrade level. 1=100% so items take no durability damage when powered.")
-        .getDoubleList();
-    darkSteelPowerStorageBase = config
-        .get(sectionDarkSteel.name, "darkSteelPowerStorageBase", darkSteelPowerStorageBase, "Base amount of power stored by dark steel items.")
-        .getInt(darkSteelPowerStorageBase);
-    darkSteelPowerStorageLevelOne = config.get(sectionDarkSteel.name, "darkSteelPowerStorageLevelOne", darkSteelPowerStorageLevelOne,
-        "Amount of power stored by dark steel items with a level 1 upgrade.").getInt(darkSteelPowerStorageLevelOne);
-    darkSteelPowerStorageLevelTwo = config.get(sectionDarkSteel.name, "darkSteelPowerStorageLevelTwo", darkSteelPowerStorageLevelTwo,
-        "Amount of power stored by dark steel items with a level 2 upgrade.").getInt(darkSteelPowerStorageLevelTwo);
-    darkSteelPowerStorageLevelThree = config.get(sectionDarkSteel.name, "darkSteelPowerStorageLevelThree", darkSteelPowerStorageLevelThree,
-        "Amount of power stored by dark steel items with a level 3 upgrade.").getInt(darkSteelPowerStorageLevelThree);
-
-    darkSteelUpgradeVibrantCost = config
-        .get(sectionDarkSteel.name, "darkSteelUpgradeVibrantCost", darkSteelUpgradeVibrantCost, "Number of levels required for the 'Empowered.")
-        .getInt(darkSteelUpgradeVibrantCost);
-    darkSteelUpgradePowerOneCost = config
-        .get(sectionDarkSteel.name, "darkSteelUpgradePowerOneCost", darkSteelUpgradePowerOneCost, "Number of levels required for the 'Power 1.")
-        .getInt(darkSteelUpgradePowerOneCost);
-    darkSteelUpgradePowerTwoCost = config
-        .get(sectionDarkSteel.name, "darkSteelUpgradePowerTwoCost", darkSteelUpgradePowerTwoCost, "Number of levels required for the 'Power 2.")
-        .getInt(darkSteelUpgradePowerTwoCost);
-    darkSteelUpgradePowerThreeCost = config
-        .get(sectionDarkSteel.name, "darkSteelUpgradePowerThreeCost", darkSteelUpgradePowerThreeCost, "Number of levels required for the 'Power 3' upgrade.")
-        .getInt(darkSteelUpgradePowerThreeCost);
-
     darkSteelJumpOneCost = config
         .get(sectionDarkSteel.name, "darkSteelJumpOneCost", darkSteelJumpOneCost, "Number of levels required for the 'Jump 1' upgrade.")
         .getInt(darkSteelJumpOneCost);
@@ -486,10 +402,6 @@ public final class Config {
     darkSteelBootsJumpModifier = config.get(sectionDarkSteel.name, "darkSteelBootsJumpModifier", darkSteelBootsJumpModifier,
         "Jump height modifier applied when jumping with Dark Steel Boots equipped").getDouble(darkSteelBootsJumpModifier);
 
-    darkSteelWalkPowerCost = config.get(sectionDarkSteel.name, "darkSteelWalkPowerCost", darkSteelWalkPowerCost,
-        "Amount of power stored energy per block walked when wearing the dark steel boots.").getInt(darkSteelWalkPowerCost);
-    darkSteelSprintPowerCost = config.get(sectionDarkSteel.name, "darkSteelSprintPowerCost", darkSteelWalkPowerCost,
-        "Amount of power stored energy per block walked when wearing the dark steel boots.").getInt(darkSteelSprintPowerCost);
     darkSteelDrainPowerFromInventory = config
         .get(sectionDarkSteel.name, "darkSteelDrainPowerFromInventory", darkSteelDrainPowerFromInventory,
             "If true, dark steel armor will drain power stored energy in power containers in the players inventory.")
@@ -577,8 +489,6 @@ public final class Config {
             "The chance per looting level that a skull will be dropped when using a non-dark steel sword (0 = no chance, 1 = 100% chance)")
         .getDouble(vanillaSwordSkullLootingModifier);
 
-    ticCleaverSkullDropChance = (float) config.get(sectionDarkSteel.name, "ticCleaverSkullDropChance", ticCleaverSkullDropChance,
-        "The base chance that an Enderman Skull will be dropped when using TiC Cleaver").getDouble(ticCleaverSkullDropChance);
     ticBeheadingSkullModifier = (float) config.get(sectionDarkSteel.name, "ticBeheadingSkullModifier", ticBeheadingSkullModifier,
         "The chance per level of Beheading that a skull will be dropped when using a TiC weapon").getDouble(ticBeheadingSkullModifier);
 
@@ -597,25 +507,6 @@ public final class Config {
         .get(sectionDarkSteel.name, "darkSteelSwordEnderPearlDropChancePerLooting", darkSteelSwordEnderPearlDropChancePerLooting,
             "The chance for each looting level that an additional ender pearl will be dropped when using a dark steel sword (0 = no chance, 1 = 100% chance)")
         .getDouble(darkSteelSwordEnderPearlDropChancePerLooting);
-
-    darkSteelBowDamageBonus = (float) config
-        .get(sectionDarkSteel.name, "darkSteelBowDamageBonus", darkSteelBowDamageBonus, "The damage bonus applied to arrows fire from the bow.")
-        .getDouble(darkSteelBowDamageBonus);
-    darkSteelBowForceMultipliers = config.get(sectionDarkSteel.name, "darkSteelBowForceMultipliers", darkSteelBowForceMultipliers,
-        "Multiplier that effects the speed with which arrows leave the bow.").getDoubleList();
-    darkSteelBowFovMultipliers = config.get(sectionDarkSteel.name, "darkSteelBowFovMultiplier", darkSteelBowFovMultipliers,
-        "The reduction in FOV when the bow is fullen drawn (the zoom level). A 'vanilla' bow has a value of 0.15").getDoubleList();
-    darkSteelBowPowerUsePerDamagePoint = config
-        .get(sectionDarkSteel.name, "darkSteelBowPowerUsePerDamagePoint", darkSteelBowPowerUsePerDamagePoint, "The amount of energy used per hit.")
-        .getInt(darkSteelBowPowerUsePerDamagePoint);
-    darkSteelBowDrawSpeeds = config.get(sectionDarkSteel.name, "darkSteelBowDrawSpeeds", darkSteelBowDrawSpeeds,
-        "A list of the amount of draw speeds at the different upgrade levels. A vanilla bow draw speed is 20").getIntList();
-    darkSteelBowPowerUsePerDraw = config
-        .get(sectionDarkSteel.name, "darkSteelBowPowerUsePerDraw", darkSteelBowPowerUsePerDraw, "The power used to fully draw the bow")
-        .getInt(darkSteelBowPowerUsePerDraw);
-    darkSteelBowPowerUsePerTickDrawn = config
-        .get(sectionDarkSteel.name, "darkSteelBowPowerUsePerTickDrawn", darkSteelBowPowerUsePerTickDrawn, "The power used per tick to hold the boy fully drawn")
-        .getInt(darkSteelBowPowerUsePerTickDrawn);
 
     darkSteelPickPowerUseObsidian = config
         .get(sectionDarkSteel.name, "darkSteelPickPowerUseObsidian", darkSteelPickPowerUseObsidian, "The amount of energy used to break an obsidian block.")
@@ -682,50 +573,6 @@ public final class Config {
     fireWaterPowerTotalBurnTime = config
         .get(sectionPower.name, "fireWaterPowerTotalBurnTime", fireWaterPowerTotalBurnTime, "The total burn time. Examples: BC Oil = 5000, BC Fuel = 25000")
         .getInt(fireWaterPowerTotalBurnTime);
-
-    // START Hoes
-
-    ConfigCategory hoes = config.getCategory(sectionHoes.name);
-    hoes.setComment("Each value of this category is an item that could be a hoe. You can add more values.");
-
-    for (String hoe : hoeStrings) {
-      config.get(sectionHoes.name, hoe, true, "Is this item a hoe that can be used in the farming station?");
-    }
-
-    farmHoes = new Things();
-    for (Entry<String, Property> entry : hoes.entrySet()) {
-      if (entry.getValue().getBoolean()) {
-        farmHoes.add(entry.getKey());
-      }
-    }
-
-    // END Hoes
-
-    magnetPowerUsePerSecondRF = config
-        .get(sectionMagnet.name, "magnetPowerUsePerTickRF", magnetPowerUsePerSecondRF, "The amount of energy used per tick when the magnet is active")
-        .getInt(magnetPowerUsePerSecondRF);
-    magnetPowerCapacityRF = config.get(sectionMagnet.name, "magnetPowerCapacityRF", magnetPowerCapacityRF, "Amount of energy stored in a fully charged magnet")
-        .getInt(magnetPowerCapacityRF);
-    magnetRange = config.get(sectionMagnet.name, "magnetRange", magnetRange, "Range of the magnet in blocks.").getInt(magnetRange);
-    magnetMaxItems = config
-        .get(sectionMagnet.name, "magnetMaxItems", magnetMaxItems, "Maximum number of items the magnet can effect at a time. (-1 for unlimited)")
-        .getInt(magnetMaxItems);
-
-    magnetBlacklist = config.getStringList("magnetBlacklist", sectionMagnet.name, magnetBlacklist, "These items will not be picked up by the magnet.");
-
-    magnetAllowInMainInventory = config.get(sectionMagnet.name, "magnetAllowInMainInventory", magnetAllowInMainInventory,
-        "If true the magnet will also work in the main inventory, not just the hotbar").getBoolean(magnetAllowInMainInventory);
-
-    magnetAllowInBaublesSlot = config.get(sectionMagnet.name, "magnetAllowInBaublesSlot", magnetAllowInBaublesSlot,
-        "If true the magnet can be put into the 'amulet' Baubles slot (requires Baubles to be installed)").getBoolean(magnetAllowInBaublesSlot);
-    magnetAllowDeactivatedInBaublesSlot = config.get(sectionMagnet.name, "magnetAllowDeactivatedInBaublesSlot", magnetAllowDeactivatedInBaublesSlot,
-        "If true the magnet can be put into the 'amulet' Baubles slot even if switched off (requires Baubles to be installed and magnetAllowInBaublesSlot to be on)")
-        .getBoolean(magnetAllowDeactivatedInBaublesSlot);
-
-    magnetBaublesType = config
-        .get(sectionMagnet.name, "magnetBaublesType", magnetBaublesType,
-            "The BaublesType the magnet should be, 'AMULET', 'RING' or 'BELT' (requires Baubles to be installed and magnetAllowInBaublesSlot to be on)")
-        .getString();
 
     nutrientFoodBoostDelay = config.get(sectionFluid.name, "nutrientFluidFoodBoostDelay", nutrientFoodBoostDelay,
         "The delay in ticks between when nutrient distillation boosts your food value.").getInt((int) nutrientFoodBoostDelay);
@@ -825,27 +672,11 @@ public final class Config {
     enableBaublesIntegration = config.getBoolean("enableBaublesIntegration", sectionMisc.name, enableBaublesIntegration,
         "If false baubles intergation will be disabled even if Baubles is installed");
 
-    teleportEffectProbability = config
-        .get(sectionAdvanced.name, "teleportEffectProbability", teleportEffectProbability, "The probability that Enderios do what they promise.")
-        .getDouble(teleportEffectProbability);
-
     BaseConfig.load();
     BaseConfig.F.setConfig(config);
   }
 
   public static void init(FMLPostInitializationEvent event) {
-    if (darkSteelPowerDamgeAbsorptionRatios == null || darkSteelPowerDamgeAbsorptionRatios.length != 4) {
-      throw new IllegalArgumentException("Ender IO config value darkSteelPowerDamgeAbsorptionRatios must have exactly 4 values");
-    }
-    if (darkSteelBowForceMultipliers == null || darkSteelBowForceMultipliers.length != 5) {
-      throw new IllegalArgumentException("Ender IO config value darkSteelBowForceMultipliers must have exactly 5 values");
-    }
-    if (darkSteelBowDrawSpeeds == null || darkSteelBowDrawSpeeds.length != 5) {
-      throw new IllegalArgumentException("Ender IO config value darkSteelBowDrawSpeeds must have exactly 5 values");
-    }
-    if (darkSteelBowFovMultipliers == null || darkSteelBowFovMultipliers.length != 5) {
-      throw new IllegalArgumentException("Ender IO config value darkSteelBowFovMultipliers must have exactly 5 values");
-    }
   }
 
   private Config() {

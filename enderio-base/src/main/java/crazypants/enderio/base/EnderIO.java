@@ -33,7 +33,6 @@ import crazypants.enderio.base.init.ModObjectRegistry;
 import crazypants.enderio.base.integration.bigreactors.BRProxy;
 import crazypants.enderio.base.integration.buildcraft.BuildcraftIntegration;
 import crazypants.enderio.base.integration.chiselsandbits.CABIMC;
-import crazypants.enderio.base.loot.LootManager;
 import crazypants.enderio.base.material.recipes.MaterialOredicts;
 import crazypants.enderio.base.network.PacketHandler;
 import crazypants.enderio.base.paint.PaintSourceValidator;
@@ -133,6 +132,8 @@ public class EnderIO implements IEnderIOAddon {
   public void load(@Nonnull FMLInitializationEvent event) {
     Log.debug("PHASE INIT START");
 
+    MinecraftForge.EVENT_BUS.post(new EnderIOLifecycleEvent.Init.Pre());
+
     initCrashData(); // after blocks have been created
 
     Fluids.registerFuels();
@@ -148,6 +149,8 @@ public class EnderIO implements IEnderIOAddon {
     GuiHelper.init(event);
 
     proxy.init(event);
+
+    MinecraftForge.EVENT_BUS.post(new EnderIOLifecycleEvent.Init.Pre());
 
     Log.debug("PHASE INIT END");
   }
@@ -183,9 +186,9 @@ public class EnderIO implements IEnderIOAddon {
 
     Config.init(event);
 
-    ModObjectRegistry.init(event);
+    MinecraftForge.EVENT_BUS.post(new EnderIOLifecycleEvent.PostInit.Pre());
 
-    LootManager.init(event);
+    ModObjectRegistry.init(event);
 
     SagMillRecipeManager.getInstance().create();
     AlloyRecipeManager.getInstance().create();
@@ -202,6 +205,8 @@ public class EnderIO implements IEnderIOAddon {
 
     Celeb.init(event);
     Scheduler.instance.start();
+
+    MinecraftForge.EVENT_BUS.post(new EnderIOLifecycleEvent.PostInit.Post());
 
     Log.debug("PHASE POST-INIT END");
   }
@@ -238,7 +243,7 @@ public class EnderIO implements IEnderIOAddon {
             return;
           }
           if (IMC.XML_RECIPE.equals(key)) {
-            RecipeLoader.addIMCRecipe(value);
+            RecipeLoader.addIMCRecipe(msg.getSender(), value);
           } else if (IMC.TELEPORT_BLACKLIST_ADD.equals(key)) {
             Config.TRAVEL_BLACKLIST.add(value);
           } else if (IMC.REDSTONE_CONNECTABLE_ADD.equals(key)) {
@@ -306,7 +311,7 @@ public class EnderIO implements IEnderIOAddon {
   @Override
   @Nonnull
   public NNList<String> getExampleFiles() {
-    return new NNList<>("peaceful", "easy_recipes", "hard_recipes", "broken_spawner", "cheap_materials");
+    return new NNList<>("peaceful", "easy_recipes", "hard_recipes", "broken_spawner", "cheap_materials", "legacy_recipes");
   }
 
   static void initCrashData() {

@@ -3,6 +3,8 @@ package crazypants.enderio.base.paint;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.apache.logging.log4j.util.Strings;
+
 import com.enderio.core.common.util.FluidUtil;
 import com.enderio.core.common.util.NullHelper;
 import com.enderio.core.common.util.stackable.Things;
@@ -27,7 +29,11 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumBlockRenderType;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModContainer;
+import net.minecraftforge.registries.IForgeRegistryEntry;
 
 import static crazypants.enderio.util.NbtValue.BLOCKSTATE;
 
@@ -126,9 +132,13 @@ public class PaintUtil {
   }
 
   public static void setPaintSource(@Nonnull ItemStack itemStack, @Nonnull ItemStack paintSource) {
-    paintSource = paintSource.copy();
-    paintSource.setCount(1);
-    NbtValue.PAINT_SOURCE.setStack(itemStack, paintSource);
+    if (Prep.isInvalid(paintSource)) {
+      NbtValue.PAINT_SOURCE.removeTag(itemStack);
+    } else {
+      paintSource = paintSource.copy();
+      paintSource.setCount(1);
+      NbtValue.PAINT_SOURCE.setStack(itemStack, paintSource);
+    }
   }
 
   public static @Nonnull ItemStack getPaintSource(@Nonnull ItemStack itemStack) {
@@ -241,10 +251,10 @@ public class PaintUtil {
       if (itemIn instanceof ItemBlock) {
         final Block block = ((ItemBlock) itemIn).getBlock();
         if (NullHelper.untrust(block) == null) {
-          Log.warn("ItemBlock " + itemIn + " returned null from getBlock(). This is a major bug in the mod that item belongs to.");
+          Log.warn("ItemBlock " + itemIn + " returned null from getBlock(). This is a major bug in the mod '" + block2Modname(itemIn) + "'.");
         } else if (NullHelper.untrust(Block.REGISTRY.getNameForObject(block)) == null) {
           throw new RuntimeException(
-              "ItemBlock " + itemIn + " returned an unregistered block from getBlock(). This is a major bug in the mod that item belongs to.");
+              "ItemBlock " + itemIn + " returned an unregistered block from getBlock(). This is a major bug in the mod '" + block2Modname(itemIn) + "'.");
         }
         return block;
       }
@@ -266,10 +276,10 @@ public class PaintUtil {
       if (itemStack.getItem() instanceof ItemBlock) {
         final Block block = ((ItemBlock) itemStack.getItem()).getBlock();
         if (NullHelper.untrust(block) == null) {
-          Log.warn("ItemBlock " + itemStack + " returned null from getBlock(). This is a major bug in the mod that item belongs to.");
+          Log.warn("ItemBlock " + itemStack + " returned null from getBlock(). This is a major bug in the mod '" + block2Modname(itemStack.getItem()) + "'.");
         } else if (NullHelper.untrust(Block.REGISTRY.getNameForObject(block)) == null) {
-          throw new RuntimeException(
-              "ItemBlock " + itemStack + " returned an unregistered block from getBlock(). This is a major bug in the mod that item belongs to.");
+          throw new RuntimeException("ItemBlock " + itemStack + " returned an unregistered block from getBlock(). This is a major bug in the mod '"
+              + block2Modname(itemStack.getItem()) + "'.");
         }
         return block;
       }
@@ -304,19 +314,44 @@ public class PaintUtil {
       // Vanilla bug. ItemPiston returns an invalid block meta.
       return paintBlock.getDefaultState();
     }
-    final IBlockState stateFromMeta = paintBlock.getStateFromMeta(paintSource.getItem().getMetadata(paintSource.getMetadata()));
+    IBlockState stateFromMeta;
+    try {
+      stateFromMeta = paintBlock.getStateFromMeta(paintSource.getItem().getMetadata(paintSource.getMetadata()));
+    } catch (Exception e) {
+      throw new RuntimeException("Block " + paintBlock + " (" + paintBlock.getClass() + ") belonging to item " + paintSource
+          + " failed to convert its item damage into a blockstate. This is a bug in the mod '" + block2Modname(paintBlock) + "'.", e);
+    }
     if (NullHelper.untrust(stateFromMeta) == null) {
       throw new RuntimeException("Block " + paintBlock + " (" + paintBlock.getClass() + ") belonging to item " + paintSource
-          + " returned null from getStateFromMeta(). This is a major bug in the mod that block belongs to.");
+          + " returned null from getStateFromMeta(). This is a major bug in the mod '" + block2Modname(paintBlock) + "'.");
     } else if (NullHelper.untrust(stateFromMeta.getBlock()) == null) {
       throw new RuntimeException("Block " + paintBlock + " (" + paintBlock.getClass() + ") belonging to item " + paintSource + " returned a blockstate ("
-          + stateFromMeta + ") without block from getStateFromMeta(). This is a major bug in the mod that block belongs to.");
+          + stateFromMeta + ") without block from getStateFromMeta(). This is a major bug in the mod '" + block2Modname(paintBlock) + "'.");
     } else if (NullHelper.untrust(Block.REGISTRY.getNameForObject(stateFromMeta.getBlock())) == null) {
       throw new RuntimeException("Block " + paintBlock + " (" + paintBlock.getClass() + ") belonging to item " + paintSource + " returned a blockstate ("
-          + stateFromMeta + ") that belongs to an unregistered block " + stateFromMeta.getBlock()
-          + " from getStateFromMeta(). This is a major bug in the mod that block belongs to.");
+          + stateFromMeta + ") that belongs to an unregistered block " + stateFromMeta.getBlock() + " from getStateFromMeta(). This is a major bug in the mod '"
+          + block2Modname(paintBlock) + "'.");
     }
     return stateFromMeta;
+  }
+
+  public static @Nonnull String block2Modname(IForgeRegistryEntry<?> block) {
+    if (block != null) {
+      final ResourceLocation registryName = block.getRegistryName();
+      if (registryName != null) {
+        final String modid = registryName.getResourceDomain();
+        if (!Strings.isBlank(modid)) {
+          final ModContainer modContainer = Loader.instance().getIndexedModList().get(modid);
+          if (modContainer != null) {
+            String name = modContainer.getName();
+            if (name != null && !name.trim().isEmpty()) {
+              return name;
+            }
+          }
+        }
+      }
+    }
+    return "(???)";
   }
 
   /**

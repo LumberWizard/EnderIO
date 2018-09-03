@@ -6,7 +6,10 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.xml.stream.XMLStreamException;
@@ -22,13 +25,14 @@ import crazypants.enderio.base.EnderIO;
 import crazypants.enderio.base.Log;
 import crazypants.enderio.base.config.Config;
 import crazypants.enderio.base.config.config.RecipeConfig;
+import crazypants.enderio.base.config.recipes.xml.Aliases;
 import crazypants.enderio.base.config.recipes.xml.Recipes;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 
 public class RecipeLoader {
 
-  private static NNList<String> imcRecipes = new NNList<>();
+  private static Map<String, String> imcRecipes = new HashMap<>();
 
   private RecipeLoader() {
   }
@@ -45,19 +49,19 @@ public class RecipeLoader {
 
     recipeFactory.createFileUser("recipes/user/user_recipes.xml");
 
-    NNList<Triple<Integer, RecipeFactory, String>> recipeFiles = new NNList<>();
+    NNList<Triple<Integer, RecipeFactory, String>> coreFiles = new NNList<>();
 
     for (ModContainer modContainer : Loader.instance().getModList()) {
       Object mod = modContainer.getMod();
       if (mod instanceof IEnderIOAddon) {
-        recipeFiles.addAll(((IEnderIOAddon) mod).getRecipeFiles());
+        coreFiles.addAll(((IEnderIOAddon) mod).getRecipeFiles());
         for (String filename : ((IEnderIOAddon) mod).getExampleFiles()) {
           recipeFactory.copyCore("recipes/examples/" + filename + ".xml");
         }
       }
     }
 
-    Collections.sort(recipeFiles, new Comparator<Triple<Integer, RecipeFactory, String>>() {
+    Collections.sort(coreFiles, new Comparator<Triple<Integer, RecipeFactory, String>>() {
       @Override
       public int compare(Triple<Integer, RecipeFactory, String> o1, Triple<Integer, RecipeFactory, String> o2) {
         return o1.getLeft().compareTo(o2.getLeft());
@@ -65,11 +69,27 @@ public class RecipeLoader {
     });
 
     Set<File> userfiles = new HashSet<>(recipeFactory.listXMLFiles("recipes/user"));
-    for (Triple<Integer, RecipeFactory, String> triple : recipeFiles) {
+    for (Triple<Integer, RecipeFactory, String> triple : coreFiles) {
       RecipeFactory factory = triple.getMiddle();
       if (factory != null) {
         userfiles.addAll(factory.listXMLFiles("recipes/user"));
       }
+    }
+
+    /*
+     * Do a first pass just for aliases. Always load core aliases, even if core recipes are disabled.
+     */
+
+    for (Triple<Integer, RecipeFactory, String> triple : coreFiles) {
+      readCoreFile(new Aliases(), NullHelper.first(triple.getMiddle(), recipeFactory), "recipes/" + triple.getRight());
+    }
+
+    if (imcRecipes != null) {
+      handleIMCRecipes(new Aliases(), new Aliases());
+    }
+
+    for (File file : userfiles) {
+      readUserFile(new Aliases(), recipeFactory, file.getName(), file);
     }
 
     /*
@@ -80,8 +100,8 @@ public class RecipeLoader {
     Recipes config = new Recipes();
     if (RecipeConfig.loadCoreRecipes.get()) {
       try {
-        for (Triple<Integer, RecipeFactory, String> triple : recipeFiles) {
-          config = readCoreFile(NullHelper.first(triple.getMiddle(), recipeFactory), "recipes/" + triple.getRight()).addRecipes(config, false);
+        for (Triple<Integer, RecipeFactory, String> triple : coreFiles) {
+          config = readCoreFile(new Recipes(), NullHelper.first(triple.getMiddle(), recipeFactory), "recipes/" + triple.getRight()).addRecipes(config, false);
         }
       } catch (InvalidRecipeConfigException e) {
         recipeError(NullHelper.first(e.getFilename(), "Core Recipes"), e.getMessage());
@@ -92,12 +112,12 @@ public class RecipeLoader {
     }
 
     if (imcRecipes != null) {
-      config = handleIMCRecipes(config);
+      config = handleIMCRecipes(new Recipes(), config);
       imcRecipes = null;
     }
 
     for (File file : userfiles) {
-      final Recipes userFile = readUserFile(recipeFactory, file.getName(), file);
+      final Recipes userFile = readUserFile(new Recipes(), recipeFactory, file.getName(), file);
       if (userFile != null) {
         try {
           config = userFile.addRecipes(config, true);
@@ -117,30 +137,35 @@ public class RecipeLoader {
     }
   }
 
-  private static Recipes handleIMCRecipes(Recipes config) {
-    for (String recipe : imcRecipes) {
-      try (InputStream is = IOUtils.toInputStream(recipe, Charset.forName("UTF-8"))) {
-        Recipes recipes = RecipeFactory.readStax(new Recipes(), "recipes", is);
+  private static <T extends RecipeRoot> T handleIMCRecipes(T target, T config) {
+    for (Entry<String, String> recipe : imcRecipes.entrySet()) {
+      try (InputStream is = IOUtils.toInputStream(recipe.getValue(), Charset.forName("UTF-8"))) {
+        T recipes = RecipeFactory.readStax(target, "recipes", is);
         recipes.enforceValidity();
         config = recipes.addRecipes(config, true);
       } catch (InvalidRecipeConfigException e) {
-        recipeError(NullHelper.first(e.getFilename(), "IMC from other mod"), e.getMessage());
-      } catch (IOException e) {
-        Log.error("IO error while parsing string:");
+        Log.error("Invalied recipe while parsing IMC:");
         e.printStackTrace();
-        recipeError("IMC from other mod", "IO error while parsing string:" + e.getMessage());
+        Log.error("IMC message:\n" + recipe.getValue());
+        recipeError(NullHelper.first(e.getFilename(), "IMC from the mod '" + recipe.getKey() + "'"), e.getMessage());
+      } catch (IOException e) {
+        Log.error("IO error while parsing IMC:");
+        e.printStackTrace();
+        Log.error("IMC message:\n" + recipe.getValue());
+        recipeError("IMC from the mod '" + recipe.getKey() + "'", "IO error while parsing string:" + e.getMessage());
       } catch (XMLStreamException e) {
         Log.error("IMC has malformed XML:");
         e.printStackTrace();
-        recipeError("IMC from other mod", "IMC has malformed XML:" + e.getMessage());
+        Log.error("IMC message:\n" + recipe.getValue());
+        recipeError("IMC from the mod '" + recipe.getKey() + "'", "IMC has malformed XML:" + e.getMessage());
       }
     }
     return config;
   }
 
-  private static Recipes readUserFile(final RecipeFactory recipeFactory, String filename, File file) {
+  private static <T extends RecipeRoot> T readUserFile(T target, final RecipeFactory recipeFactory, String filename, File file) {
     try {
-      final Recipes recipes = RecipeFactory.readFileUser(new Recipes(), "recipes", filename, file);
+      final T recipes = RecipeFactory.readFileUser(target, "recipes", filename, file);
       if (recipes.isValid()) {
         recipes.enforceValidity();
         return recipes;
@@ -162,9 +187,9 @@ public class RecipeLoader {
     return null;
   }
 
-  private static Recipes readCoreFile(final RecipeFactory recipeFactory, String filename) {
+  private static <T extends RecipeRoot> T readCoreFile(T target, final RecipeFactory recipeFactory, String filename) {
     try {
-      final Recipes recipes = recipeFactory.readCoreFile(new Recipes(), "recipes", filename + ".xml");
+      final T recipes = recipeFactory.readCoreFile(target, "recipes", filename + ".xml");
       if (recipes.isValid()) {
         recipes.enforceValidity();
         return recipes;
@@ -182,12 +207,12 @@ public class RecipeLoader {
       e.printStackTrace();
       recipeError(filename + ".xml", "File has malformed XML:" + e.getMessage());
     }
-    return new Recipes();
+    return target;
   }
 
-  public static void addIMCRecipe(String recipe) throws XMLStreamException, IOException {
+  public static void addIMCRecipe(String sender, String recipe) throws XMLStreamException, IOException {
     if (imcRecipes != null) {
-      imcRecipes.add(recipe);
+      imcRecipes.put(sender, recipe);
     } else {
       try (InputStream is = IOUtils.toInputStream(recipe, Charset.forName("UTF-8"))) {
         Recipes recipes = RecipeFactory.readStax(new Recipes(), "recipes", is);

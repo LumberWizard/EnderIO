@@ -4,8 +4,8 @@ import javax.annotation.Nonnull;
 
 import com.enderio.core.client.render.BoundingBox;
 
+import crazypants.enderio.base.Log;
 import crazypants.enderio.base.TileEntityEio;
-import crazypants.enderio.base.capacitor.DefaultCapacitorData;
 import crazypants.enderio.base.paint.IPaintable;
 import crazypants.enderio.base.paint.YetaUtil;
 import crazypants.enderio.base.power.ILegacyPowerReceiver;
@@ -61,7 +61,7 @@ public class TileWirelessCharger extends TileEntityEio implements ILegacyPowerRe
   @Override
   public boolean chargeItems(NonNullList<ItemStack> items) {
     boolean chargedItem = false;
-    int available = Math.min(CapacitorKey.WIRELESS_POWER_OUTPUT.get(DefaultCapacitorData.BASIC_CAPACITOR), storedEnergyRF);
+    int available = Math.min(CapacitorKey.WIRELESS_POWER_OUTPUT.getDefault(), storedEnergyRF);
     for (int i = 0, end = items.size(); i < end && available > 0; i++) {
       ItemStack item = items.get(i);
       if (!item.isEmpty()) {
@@ -86,7 +86,7 @@ public class TileWirelessCharger extends TileEntityEio implements ILegacyPowerRe
 
   @Override
   public int getMaxEnergyRecieved(EnumFacing dir) {
-    return CapacitorKey.WIRELESS_POWER_INTAKE.get(DefaultCapacitorData.BASIC_CAPACITOR);
+    return CapacitorKey.WIRELESS_POWER_INTAKE.getDefault();
   }
 
   @Override
@@ -96,7 +96,7 @@ public class TileWirelessCharger extends TileEntityEio implements ILegacyPowerRe
 
   @Override
   public int getMaxEnergyStored() {
-    return CapacitorKey.WIRELESS_POWER_BUFFER.get(DefaultCapacitorData.BASIC_CAPACITOR);
+    return CapacitorKey.WIRELESS_POWER_BUFFER.getDefault();
   }
 
   @Override
@@ -145,8 +145,19 @@ public class TileWirelessCharger extends TileEntityEio implements ILegacyPowerRe
   @Override
   @Nonnull
   public BoundingBox getRange() {
+    if (this.isInvalid()) {
+      Log.error("TileEntity " + this + " at " + pos + " is invalid but was not invalidated. This should not be possible!");
+      return bb;
+    }
     IBlockState actualState = world.getBlockState(pos).getActualState(world, pos);
     if (actualState != blockState) {
+      if (!(actualState.getBlock() instanceof BlockNormalWirelessCharger)) {
+        Log.error("TileEntity " + this + " at " + pos + " is assigned to a wrong block (" + actualState
+            + "). This should not be possible unless the world was severly corrupted!");
+        world.removeTileEntity(pos);
+        world.createExplosion(null, pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5, 1, false);
+        return bb;
+      }
       blockState = actualState;
       bb = ((BlockNormalWirelessCharger) actualState.getBlock()).getChargingStrength(actualState, pos);
     }

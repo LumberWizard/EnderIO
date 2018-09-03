@@ -2,6 +2,7 @@ package crazypants.enderio.base.item.darksteel;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -12,32 +13,36 @@ import com.enderio.core.api.client.gui.IAdvancedTooltipProvider;
 import com.enderio.core.client.handlers.SpecialTooltipHandler;
 import com.enderio.core.common.transform.EnderCoreMethods.IOverlayRenderAware;
 import com.enderio.core.common.util.ItemUtil;
-import com.enderio.core.common.util.NNList;
-import com.enderio.core.common.util.NNList.NNIterator;
 import com.enderio.core.common.util.NullHelper;
 import com.enderio.core.common.util.OreDictionaryHelper;
 import com.enderio.core.common.util.stackable.Things;
+import com.google.common.collect.Multimap;
 
+import crazypants.enderio.api.IModObject;
+import crazypants.enderio.api.capacitor.ICapacitorKey;
 import crazypants.enderio.api.teleport.IItemOfTravel;
 import crazypants.enderio.api.teleport.TravelSource;
 import crazypants.enderio.api.upgrades.IDarkSteelItem;
 import crazypants.enderio.api.upgrades.IDarkSteelUpgrade;
+import crazypants.enderio.api.upgrades.IEquipmentData;
 import crazypants.enderio.base.EnderIO;
 import crazypants.enderio.base.EnderIOTab;
+import crazypants.enderio.base.capacitor.CapacitorKey;
 import crazypants.enderio.base.config.Config;
 import crazypants.enderio.base.config.config.DarkSteelConfig;
 import crazypants.enderio.base.handler.darksteel.DarkSteelRecipeManager;
-import crazypants.enderio.base.init.IModObject;
-import crazypants.enderio.base.item.darksteel.attributes.ToolData;
+import crazypants.enderio.base.handler.darksteel.PlayerAOEAttributeHandler;
+import crazypants.enderio.base.item.darksteel.attributes.EquipmentData;
 import crazypants.enderio.base.item.darksteel.upgrade.energy.EnergyUpgrade;
 import crazypants.enderio.base.item.darksteel.upgrade.energy.EnergyUpgrade.EnergyUpgradeHolder;
 import crazypants.enderio.base.item.darksteel.upgrade.energy.EnergyUpgradeManager;
+import crazypants.enderio.base.item.darksteel.upgrade.explosive.ExplosiveCarpetUpgrade;
+import crazypants.enderio.base.item.darksteel.upgrade.explosive.ExplosiveDepthUpgrade;
 import crazypants.enderio.base.item.darksteel.upgrade.explosive.ExplosiveUpgrade;
 import crazypants.enderio.base.item.darksteel.upgrade.spoon.SpoonUpgrade;
 import crazypants.enderio.base.item.darksteel.upgrade.travel.TravelUpgrade;
 import crazypants.enderio.base.lang.Lang;
 import crazypants.enderio.base.lang.LangPower;
-import crazypants.enderio.base.material.alloy.Alloy;
 import crazypants.enderio.base.network.PacketSpawnParticles;
 import crazypants.enderio.base.render.itemoverlay.PowerBarOverlayRenderHelper;
 import crazypants.enderio.base.teleport.TravelController;
@@ -48,6 +53,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -62,6 +68,7 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.GameType;
@@ -78,27 +85,28 @@ public class ItemDarkSteelPickaxe extends ItemPickaxe implements IAdvancedToolti
   }
 
   public static ItemDarkSteelPickaxe createEndSteel(@Nonnull IModObject modObject) {
-    ItemDarkSteelPickaxe res = new ItemDarkSteelPickaxe(modObject, ToolData.MATERIAL_END_STEEL);
+    ItemDarkSteelPickaxe res = new ItemDarkSteelPickaxe(modObject, EquipmentData.END_STEEL);
     MinecraftForge.EVENT_BUS.register(res);
     return res;
   }
 
   public static ItemDarkSteelPickaxe createDarkSteel(@Nonnull IModObject modObject) {
-    ItemDarkSteelPickaxe res = new ItemDarkSteelPickaxe(modObject, ToolData.MATERIAL_DARK_STEEL);
+    ItemDarkSteelPickaxe res = new ItemDarkSteelPickaxe(modObject, EquipmentData.DARK_STEEL);
     MinecraftForge.EVENT_BUS.register(res);
     return res;
   }
 
   private long lastBlickTick = -1;
+  private final @Nonnull IEquipmentData data;
 
-  public ItemDarkSteelPickaxe(@Nonnull IModObject modObject, @Nonnull ToolMaterial material) {
-    super(material);
+  public ItemDarkSteelPickaxe(@Nonnull IModObject modObject, @Nonnull IEquipmentData data) {
+    super(data.getToolMaterial());
     setCreativeTab(EnderIOTab.tabEnderIOItems);
     modObject.apply(this);
+    this.data = data;
   }
 
   @Override
-  @SideOnly(Side.CLIENT)
   public void getSubItems(@Nonnull CreativeTabs tab, @Nonnull NonNullList<ItemStack> list) {
     if (isInCreativeTab(tab)) {
       @Nonnull
@@ -106,11 +114,21 @@ public class ItemDarkSteelPickaxe extends ItemPickaxe implements IAdvancedToolti
       list.add(is);
 
       is = new ItemStack(this);
-      EnergyUpgrade.EMPOWERED_FOUR.addToItem(is, this);
+      EnergyUpgrade.UPGRADES.get(3).addToItem(is, this);
       EnergyUpgradeManager.setPowerFull(is, this);
       TravelUpgrade.INSTANCE.addToItem(is, this);
       SpoonUpgrade.INSTANCE.addToItem(is, this);
       ExplosiveUpgrade.INSTANCE.addToItem(is, this);
+      list.add(is);
+
+      is = new ItemStack(this);
+      EnergyUpgrade.UPGRADES.get(3).addToItem(is, this);
+      EnergyUpgradeManager.setPowerFull(is, this);
+      TravelUpgrade.INSTANCE.addToItem(is, this);
+      SpoonUpgrade.INSTANCE.addToItem(is, this);
+      ExplosiveUpgrade.INSTANCE5.addToItem(is, this);
+      ExplosiveDepthUpgrade.INSTANCE.addToItem(is, this);
+      ExplosiveCarpetUpgrade.INSTANCE.addToItem(is, this);
       list.add(is);
     }
   }
@@ -122,7 +140,7 @@ public class ItemDarkSteelPickaxe extends ItemPickaxe implements IAdvancedToolti
 
   @Override
   public boolean isItemForRepair(@Nonnull ItemStack right) {
-    return OreDictionaryHelper.hasName(right, Alloy.DARK_STEEL.getOreIngot());
+    return OreDictionaryHelper.hasName(right, data.getRepairIngotOredict());
   }
 
   @Override
@@ -133,10 +151,16 @@ public class ItemDarkSteelPickaxe extends ItemPickaxe implements IAdvancedToolti
         extractInternal(item, Config.darkSteelPickPowerUseObsidian);
       }
     }
-    if (!entityLiving.isSneaking() && entityLiving instanceof EntityPlayerMP && hasExplosiveUpgrade(item)) {
+    if (!entityLiving.isSneaking() && entityLiving instanceof EntityPlayerMP && PlayerAOEAttributeHandler.hasAOE((EntityPlayerMP) entityLiving)) {
       doExplosiveAction(item, world, pos, (EntityPlayerMP) entityLiving);
     }
     return super.onBlockDestroyed(item, world, bs, pos, entityLiving);
+  }
+
+  // exposed for tool methods. This should actually be a static method...
+  @Override
+  public @Nonnull RayTraceResult rayTrace(@Nonnull World worldIn, @Nonnull EntityPlayer playerIn, boolean useLiquids) {
+    return super.rayTrace(worldIn, playerIn, useLiquids);
   }
 
   @Override
@@ -195,9 +219,9 @@ public class ItemDarkSteelPickaxe extends ItemPickaxe implements IAdvancedToolti
 
   private boolean absorbDamageWithEnergy(@Nonnull ItemStack stack, int amount) {
     EnergyUpgradeHolder eu = EnergyUpgradeManager.loadFromItem(stack);
-    if (eu != null && eu.getUpgrade().isAbsorbDamageWithPower() && eu.getEnergy() > 0) {
+    if (eu != null && eu.isAbsorbDamageWithPower() && eu.getEnergy() > 0) {
       eu.extractEnergy(amount, false);
-      eu.writeToItem(stack, this);
+      eu.writeToItem();
       return true;
     } else {
       return false;
@@ -215,10 +239,6 @@ public class ItemDarkSteelPickaxe extends ItemPickaxe implements IAdvancedToolti
 
   private boolean hasSpoonUpgrade(@Nonnull ItemStack item) {
     return SpoonUpgrade.INSTANCE.hasUpgrade(item);
-  }
-
-  private boolean hasExplosiveUpgrade(@Nonnull ItemStack item) {
-    return ExplosiveUpgrade.INSTANCE.hasUpgrade(item);
   }
 
   @Override
@@ -383,31 +403,33 @@ public class ItemDarkSteelPickaxe extends ItemPickaxe implements IAdvancedToolti
     final boolean withSpoon = hasSpoonUpgrade(item);
     GameType gameType = player.interactionManager.getGameType();
     int cost = DarkSteelConfig.explosiveUpgradeEnergyPerBlock.get();
-    for (NNIterator<BlockPos> itr = NNList.SHELL.fastIterator(); getEnergyStored(item) >= cost && itr.hasNext();) {
-      final BlockPos target = pos.add(itr.next());
-      final IBlockState blockstate = world.getBlockState(target);
-      final Block block = blockstate.getBlock();
-      if ((DarkSteelConfig.explosiveUpgradeUnlimitedTargets.get() || STONES.contains(block) || (withSpoon && DIRTS.contains(block)))
-          && referenceHardness >= blockstate.getBlockHardness(world, target)
-          && (isToolEffective(blockstate, item) || ForgeHooks.canHarvestBlock(block, player, world, target))) {
-        final int exp = ForgeHooks.onBlockBreakEvent(world, gameType, player, target);
-        if (exp != -1 && block.canHarvestBlock(world, target, player)) {
-          if (block.removedByPlayer(blockstate, world, target, player, true)) {
-            block.onBlockDestroyedByPlayer(world, target, blockstate);
-            block.harvestBlock(world, player, target, blockstate, null, item);
-            if (!gameType.isCreative() && exp > 0) {
-              block.dropXpOnBlockBreak(world, target, exp);
-            }
-            extractInternal(item, cost);
-            if (itemRand.nextFloat() < DarkSteelConfig.explosiveUpgradeDurabilityChance.get()) {
-              // damage the item
-              super.onBlockDestroyed(item, world, blockstate, target, player);
-            }
-            hasDoneSomething = true;
-            if (itemRand.nextFloat() < .3f) {
-              PacketSpawnParticles.create(world, target, 1, EnumParticleTypes.EXPLOSION_NORMAL, EnumParticleTypes.SMOKE_NORMAL);
-            } else if (itemRand.nextFloat() < .5f) {
-              PacketSpawnParticles.create(world, target, 1, EnumParticleTypes.SMOKE_NORMAL);
+    for (Iterator<BlockPos> itr = PlayerAOEAttributeHandler.getAOE(pos, player); getEnergyStored(item) >= cost && itr.hasNext();) {
+      final BlockPos target = itr.next();
+      if (target != null) {
+        final IBlockState blockstate = world.getBlockState(target);
+        final Block block = blockstate.getBlock();
+        if ((DarkSteelConfig.explosiveUpgradeUnlimitedTargets.get() || STONES.contains(block) || (withSpoon && DIRTS.contains(block)))
+            && referenceHardness >= blockstate.getBlockHardness(world, target)
+            && (isToolEffective(blockstate, item) || ForgeHooks.canHarvestBlock(block, player, world, target))) {
+          final int exp = ForgeHooks.onBlockBreakEvent(world, gameType, player, target);
+          if (exp != -1 && block.canHarvestBlock(world, target, player)) {
+            if (block.removedByPlayer(blockstate, world, target, player, true)) {
+              block.onBlockDestroyedByPlayer(world, target, blockstate);
+              block.harvestBlock(world, player, target, blockstate, null, item);
+              if (!gameType.isCreative() && exp > 0) {
+                block.dropXpOnBlockBreak(world, target, exp);
+              }
+              extractInternal(item, cost);
+              if (itemRand.nextFloat() < DarkSteelConfig.explosiveUpgradeDurabilityChance.get()) {
+                // damage the item
+                super.onBlockDestroyed(item, world, blockstate, target, player);
+              }
+              hasDoneSomething = true;
+              if (itemRand.nextFloat() < .3f) {
+                PacketSpawnParticles.create(world, target, 1, EnumParticleTypes.EXPLOSION_NORMAL, EnumParticleTypes.SMOKE_NORMAL);
+              } else if (itemRand.nextFloat() < .5f) {
+                PacketSpawnParticles.create(world, target, 1, EnumParticleTypes.SMOKE_NORMAL);
+              }
             }
           }
         }
@@ -458,6 +480,36 @@ public class ItemDarkSteelPickaxe extends ItemPickaxe implements IAdvancedToolti
   @Override
   public boolean hasUpgradeCallbacks(@Nonnull IDarkSteelUpgrade upgrade) {
     return upgrade == ExplosiveUpgrade.INSTANCE || upgrade == SpoonUpgrade.INSTANCE || upgrade == TravelUpgrade.INSTANCE;
+  }
+
+  @Override
+  public @Nonnull IEquipmentData getEquipmentData() {
+    return data;
+  }
+
+  @Override
+  public @Nonnull ICapacitorKey getEnergyStorageKey(@Nonnull ItemStack stack) {
+    return CapacitorKey.DARK_STEEL_PICKAXE_ENERGY_BUFFER;
+  }
+
+  @Override
+  public @Nonnull ICapacitorKey getEnergyInputKey(@Nonnull ItemStack stack) {
+    return CapacitorKey.DARK_STEEL_PICKAXE_ENERGY_INPUT;
+  }
+
+  @Override
+  public @Nonnull ICapacitorKey getEnergyUseKey(@Nonnull ItemStack stack) {
+    return CapacitorKey.DARK_STEEL_PICKAXE_ENERGY_USE;
+  }
+
+  @Override
+  public @Nonnull ICapacitorKey getAbsorptionRatioKey(@Nonnull ItemStack stack) {
+    return CapacitorKey.DARK_STEEL_PICKAXE_ABSORPTION_RATIO;
+  }
+
+  @Override
+  public @Nonnull Multimap<String, AttributeModifier> getAttributeModifiers(@Nonnull EntityEquipmentSlot slot, @Nonnull ItemStack stack) {
+    return addAttributeModifiers(slot, stack, super.getAttributeModifiers(slot, stack));
   }
 
 }

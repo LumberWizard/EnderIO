@@ -11,10 +11,10 @@ import com.enderio.core.client.handlers.SpecialTooltipHandler;
 import com.enderio.core.common.CompoundCapabilityProvider;
 import com.enderio.core.common.transform.EnderCoreMethods.IOverlayRenderAware;
 
+import crazypants.enderio.api.IModObject;
 import crazypants.enderio.base.EnderIO;
 import crazypants.enderio.base.EnderIOTab;
 import crazypants.enderio.base.Log;
-import crazypants.enderio.base.init.IModObject;
 import crazypants.enderio.base.lang.LangFluid;
 import crazypants.enderio.base.lang.LangPower;
 import crazypants.enderio.base.power.IInternalPoweredItem;
@@ -93,7 +93,6 @@ public class ItemRemoteInvAccess extends Item implements IAdvancedTooltipProvide
   }
 
   @Override
-  @SideOnly(Side.CLIENT)
   public void getSubItems(@Nonnull CreativeTabs par2CreativeTabs, @Nonnull NonNullList<ItemStack> par3List) {
     if (par2CreativeTabs.equals(EnderIOTab.tabEnderIOInvpanel)) {
       for (ItemRemoteInvAccessType type : ItemRemoteInvAccessType.values()) {
@@ -238,15 +237,14 @@ public class ItemRemoteInvAccess extends Item implements IAdvancedTooltipProvide
 
   @Override
   public void renderItemOverlayIntoGUI(@Nonnull ItemStack stack, int xPosition, int yPosition) {
-    PowerBarOverlayRenderHelper.instance_fluid
-        .render(stack, xPosition, yPosition, PowerBarOverlayRenderHelper.instance.render(stack, xPosition, yPosition) ? 1 : 0);
+    PowerBarOverlayRenderHelper.instance_fluid.render(stack, xPosition, yPosition,
+        PowerBarOverlayRenderHelper.instance.render(stack, xPosition, yPosition) ? 1 : 0);
   }
 
   @Override
   public boolean shouldCauseReequipAnimation(@Nonnull ItemStack oldStack, @Nonnull ItemStack newStack, boolean slotChanged) {
-    return slotChanged ?
-        super.shouldCauseReequipAnimation(oldStack, newStack, slotChanged) :
-        (oldStack.isEmpty() || newStack.isEmpty() || !ItemStack.areItemsEqual(oldStack, newStack));
+    return slotChanged ? super.shouldCauseReequipAnimation(oldStack, newStack, slotChanged)
+        : (oldStack.isEmpty() || newStack.isEmpty() || !ItemStack.areItemsEqual(oldStack, newStack));
   }
 
   @Override
